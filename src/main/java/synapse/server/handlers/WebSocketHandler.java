@@ -24,21 +24,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
-        executorService.submit(() -> handleClient(session));
-    }
-
-    private void handleClient(WebSocketSession session) {
-        try {
-            // Handle client connection in a separate thread
-            log("Client connected: " + session.getId());
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        log("Client connected: " + session.getId());
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // Handle incoming messages from clients
         log("Received message: [" + session.getId() + "] " + message.getPayload());
     }
 
@@ -56,6 +46,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 } catch (Exception e) {
                     log(e.getMessage());
                 }
+            }
+        }
+    }
+
+    public void distributeJob(String jobId) {
+        synchronized (sessions) {
+            for (WebSocketSession session : sessions) {
+                executorService.submit(() -> {
+                    try {
+                        session.sendMessage(new TextMessage("New job assigned: " + jobId));
+                    } catch (IOException e) {
+                        log("Error sending job to client: " + e.getMessage());
+                    }
+                });
             }
         }
     }

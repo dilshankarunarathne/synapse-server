@@ -3,6 +3,7 @@ package synapse.server.services;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import synapse.server.handlers.WebSocketHandler;
 import synapse.server.models.Job;
 import synapse.server.models.JobStatus;
 import synapse.server.repositories.JobRepository;
@@ -20,6 +21,9 @@ public class JobService {
 
     @Autowired
     private JobRepository jobRepository;
+
+    @Autowired
+    private WebSocketHandler webSocketHandler;
 
     public String submitJob(
             String clientId,
@@ -50,12 +54,16 @@ public class JobService {
         log("Job Saving (DB): " + jobId + ", " + clientId + ", " + JobStatus.INITIATED + ", Pending");
         jobRepository.save(job);
 
+        // Distribute job to connected clients
+        webSocketHandler.distributeJob(jobId);
+
         return jobId;
     }
 
     public void updateJobStatus(String jobId, JobStatus status) {
         Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
         job.setStatus(status);
+        log("Job [" + jobId + "] status updated: " + status);
         jobRepository.save(job);
     }
 
