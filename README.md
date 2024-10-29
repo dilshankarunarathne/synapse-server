@@ -2,6 +2,9 @@
 
 This project proposes a novel distributed programming paradigm specifically designed for resource-constrained devices operating at the edge of the network. The paradigm leverages the combined processing power of nearby devices to tackle computationally intensive tasks, overcoming limitations of individual devices. A Domain-Specific Language (DSL) facilitates user-friendly task specification for collaborative execution, while secure communication protocols ensure reliable and efficient data exchange among participating devices. This research aims to develop a scalable and fault-tolerant solution for distributed task execution, enabling efficient processing at the edge with reduced latency.
 
+[![Version](https://img.shields.io/badge/version-1.0-brightgreen.svg)](https://pypi.org/project/ad-topic-recommender/)
+[![License](https://img.shields.io/badge/license-CC%20BY--NC--SA%204.0-blue.svg)](https://creativecommons.org/licenses/by-nc-sa/4.0/)
+
 ## Core Modules
 
 1. **Job Management**
@@ -42,16 +45,21 @@ This project proposes a novel distributed programming paradigm specifically desi
 
 ## License
 
-This project is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License. See the LICENSE file for details.  <img src="https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png" alt="CC BYNCSA 40"></img>
-
-Shield: [![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]
-
 This work is licensed under a
 [Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International License][cc-by-nc-sa].
-
+[![CC BY-NC-SA 4.0][cc-by-nc-sa-shield]][cc-by-nc-sa]  
 [![CC BY-NC-SA 4.0][cc-by-nc-sa-image]][cc-by-nc-sa]
 
 [cc-by-nc-sa]: http://creativecommons.org/licenses/by-nc-sa/4.0/
+
 [cc-by-nc-sa-image]: https://licensebuttons.net/l/by-nc-sa/4.0/88x31.png
+
 [cc-by-nc-sa-shield]: https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg
 
+## Contact Information
+
+For questions or feedback, please contact the author:
+
+- Author: Dilshan M. Karunarathne
+- Email: ceo@altier.me
+- Website: [http://altier.me](http://altier.me)
