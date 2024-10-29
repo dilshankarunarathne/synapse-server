@@ -3,6 +3,7 @@ package synapse.server.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import synapse.server.handlers.WebSocketHandler;
 import synapse.server.services.AuthService;
 import synapse.server.services.JobService;
 
@@ -16,12 +17,16 @@ public class JobController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private WebSocketHandler webSocketHandler;
+
     @PostMapping
     public ResponseEntity<String> createJob(@RequestHeader("Authorization") String token, @RequestBody String jobDetails) {
         if (!authService.verifyToken(token)) {
             return ResponseEntity.status(401).body("Unauthorized");
         }
         jobService.createJob(jobDetails);
+        webSocketHandler.sendMessageToAll("New job created: " + jobDetails);
         return ResponseEntity.ok("Job created successfully");
     }
 
