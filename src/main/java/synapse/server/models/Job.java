@@ -13,6 +13,7 @@ public class Job {
     private String result;
     private String payloadPath;
     private String dataPath;
+    private JobType jobType;
 
     // Getters and setters
     public String getJobId() {
@@ -29,6 +30,14 @@ public class Job {
 
     public void setClientId(String clientId) {
         this.clientId = clientId;
+    }
+
+    public JobType getJobType() {
+        return jobType;
+    }
+
+    public void setJobType(JobType jobType) {
+        this.jobType = jobType;
     }
 
     public JobStatus getStatus() {

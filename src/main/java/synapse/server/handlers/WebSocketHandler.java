@@ -43,6 +43,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             for (WebSocketSession session : sessions) {
                 try {
                     session.sendMessage(new TextMessage(message));
+                    log("Message sent to client: " + session.getId());
                 } catch (Exception e) {
                     log(e.getMessage());
                 }
@@ -56,10 +57,45 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 executorService.submit(() -> {
                     try {
                         session.sendMessage(new TextMessage("New job assigned: " + jobId));
+                        log("Job [" + jobId + "] assigned: " + jobId + " to " + session.getId());
                     } catch (IOException e) {
                         log("Error sending job to client: " + e.getMessage());
                     }
                 });
+            }
+        }
+    }
+
+    public void assignSingleWorkerJob(String jobId) {
+        synchronized (sessions) {
+            if (!sessions.isEmpty()) {
+                WebSocketSession session = sessions.iterator().next();
+                executorService.submit(() -> {
+                    try {
+                        session.sendMessage(new TextMessage("New job assigned: " + jobId));
+                        log("Job [" + jobId + "] assigned: " + jobId + " to " + session.getId());
+                    } catch (IOException e) {
+                        log("Error sending job to client: " + e.getMessage());
+                    }
+                });
+            }
+        }
+    }
+
+    public void assignCollaborativeJob(String jobId) {
+        synchronized (sessions) {
+            int segment = 1;
+            for (WebSocketSession session : sessions) {
+                int finalSegment = segment;
+                executorService.submit(() -> {
+                    try {
+                        session.sendMessage(new TextMessage("New job segment " + finalSegment + " assigned: " + jobId));
+                        log("Job [" + jobId + ":" + finalSegment + "] assigned: " + jobId + " to " + session.getId());
+                    } catch (IOException e) {
+                        log("Error sending job to client: " + e.getMessage());
+                    }
+                });
+                segment++;
             }
         }
     }

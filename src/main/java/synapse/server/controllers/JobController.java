@@ -6,6 +6,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import synapse.server.handlers.WebSocketHandler;
 import synapse.server.models.JobStatus;
+import synapse.server.models.JobType;
 import synapse.server.services.AuthService;
 import synapse.server.services.JobService;
 
@@ -31,13 +32,14 @@ public class JobController {
             @RequestHeader("Authorization") String token,
             @RequestParam("clientId") String clientId,
             @RequestParam("payload") MultipartFile payload,
-            @RequestParam("data") MultipartFile data
+            @RequestParam("data") MultipartFile data,
+            @RequestParam("jobType") JobType jobType
     ) throws IOException {
         if (!authService.verifyToken(token)) {
             log("Unauthorized request received for job creation");
             return ResponseEntity.status(401).body("Unauthorized");
         }
-        String jobId = jobService.submitJob(clientId, payload, data);
+        String jobId = jobService.submitJob(clientId, payload, data, jobType);
         webSocketHandler.sendMessageToAll("New job created: " + jobId);
         log("Job creation successful: " + jobId);
         return ResponseEntity.ok("Job created successfully with ID: " + jobId);
@@ -59,10 +61,7 @@ public class JobController {
     }
 
     @GetMapping("/{jobId}")
-    public ResponseEntity<String> monitorJob(
-            @RequestHeader("Authorization") String token,
-            @PathVariable String jobId
-    ) {
+    public ResponseEntity<String> monitorJob(@RequestHeader("Authorization") String token, @PathVariable String jobId) {
         if (!authService.verifyToken(token)) {
             log("Unauthorized request received for query job ");
             return ResponseEntity.status(401).body("Unauthorized");

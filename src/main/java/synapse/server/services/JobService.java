@@ -6,6 +6,7 @@ import org.springframework.web.multipart.MultipartFile;
 import synapse.server.handlers.WebSocketHandler;
 import synapse.server.models.Job;
 import synapse.server.models.JobStatus;
+import synapse.server.models.JobType;
 import synapse.server.repositories.JobRepository;
 
 import java.io.IOException;
@@ -28,7 +29,8 @@ public class JobService {
     public String submitJob(
             String clientId,
             MultipartFile payload,
-            MultipartFile data
+            MultipartFile data,
+            JobType jobType
     ) throws IOException {
         // Generate a unique job ID
         String jobId = UUID.randomUUID().toString();
@@ -49,13 +51,24 @@ public class JobService {
         job.setResult("Pending"); // Set initial result
         job.setPayloadPath(payloadPath.toString());
         job.setDataPath(dataPath.toString());
+        job.setJobType(jobType); // Set job type
 
         // Add details to the DB
-        log("Job Saving (DB): " + jobId + ", " + clientId + ", " + JobStatus.INITIATED + ", Pending");
+        log("Job Saving (DB): " + jobId + ", " + clientId + ", " + JobStatus.INITIATED + ", Pending, " + jobType);
         jobRepository.save(job);
 
-        // Distribute job to connected clients
-        webSocketHandler.distributeJob(jobId);
+        // Distribute job based on job type
+        switch (jobType) {
+            case SINGLE_WORKER:
+                webSocketHandler.assignSingleWorkerJob(jobId);
+                break;
+            case DISTRIBUTIVE:
+                webSocketHandler.distributeJob(jobId);
+                break;
+            case COLLABORATIVE:
+                webSocketHandler.assignCollaborativeJob(jobId);
+                break;
+        }
 
         return jobId;
     }
