@@ -3,7 +3,9 @@ package synapse.server.controllers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import synapse.server.handlers.WebSocketHandler;
+import synapse.server.models.JobStatus;
 import synapse.server.services.AuthService;
 import synapse.server.services.JobService;
 
@@ -27,16 +29,33 @@ public class JobController {
     @PostMapping
     public ResponseEntity<String> createJob(
             @RequestHeader("Authorization") String token,
-            @RequestBody String jobDetails
-    ) {
+            @RequestParam("clientId") String clientId,
+            @RequestParam("payload") MultipartFile payload,
+            @RequestParam("data") MultipartFile data
+    ) throws IOException {
         if (!authService.verifyToken(token)) {
             log("Unauthorized request received for job creation");
             return ResponseEntity.status(401).body("Unauthorized");
         }
-        jobService.createJob(jobDetails);
-        webSocketHandler.sendMessageToAll("New job created: " + jobDetails);
-        log("Job creation successful: " + jobDetails);
-        return ResponseEntity.ok("Job created successfully");
+        String jobId = jobService.submitJob(clientId, payload, data);
+        webSocketHandler.sendMessageToAll("New job created: " + jobId);
+        log("Job creation successful: " + jobId);
+        return ResponseEntity.ok("Job created successfully with ID: " + jobId);
+    }
+
+    @PatchMapping("/{jobId}/status")
+    public ResponseEntity<String> updateJobStatus(
+            @RequestHeader("Authorization") String token,
+            @PathVariable String jobId,
+            @RequestParam("status") JobStatus status
+    ) {
+        if (!authService.verifyToken(token)) {
+            log("Unauthorized request received for updating job status");
+            return ResponseEntity.status(401).body("Unauthorized");
+        }
+        jobService.updateJobStatus(jobId, status);
+        log("Job status updated: " + jobId + " to " + status);
+        return ResponseEntity.ok("Job status updated to: " + status);
     }
 
     @GetMapping("/{jobId}")
@@ -45,8 +64,8 @@ public class JobController {
             log("Unauthorized request received for query job ");
             return ResponseEntity.status(401).body("Unauthorized");
         }
-        jobService.monitorJob(jobId);
-        log("Job status retrieved successfully: " + jobId);
-        return ResponseEntity.ok("Job status retrieved successfully");
+        String status = jobService.monitorJob(jobId);
+        log("Job [" + jobId + "] status: " + status);
+        return ResponseEntity.ok("Job [" + jobId + "] status: " + status);
     }
 }

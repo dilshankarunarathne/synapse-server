@@ -1,0 +1,24 @@
+n = int(input("input n: "))
+
+a = isqrt(n) + 1  # integer sqare root of n + 1
+while True:
+	b2 = a^2 - n
+	if is_sqare(b2):  # is a square root
+		b = sqrt(b2)
+		break
+	a = a + 1
+
+p = a + b
+q = a - b
+
+if (p * q == n):
+	print("p * q == n : True")
+else:
+	print("algorithmic error")
+
+e = int(input("input e: "))
+
+phi_n = (p-1) * (q-1)
+d = inverse_mod(e, phi_n)  # modulo inverse
+
+print("d = ", d)
