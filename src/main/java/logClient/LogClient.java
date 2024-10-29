@@ -46,7 +46,7 @@ public class LogClient {
 
         // Get the response code
         int responseCode = conn.getResponseCode();
-        System.out.println("POST Response Code :: " + responseCode);
+        System.out.println("(Logger) POST Response Code :: " + responseCode);
     }
 
     public void close() {
