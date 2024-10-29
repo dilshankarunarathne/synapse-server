@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static synapse.server.ServerApplication.log;
 
@@ -17,15 +19,27 @@ import static synapse.server.ServerApplication.log;
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private final Set<WebSocketSession> sessions = Collections.synchronizedSet(new HashSet<>());
+    private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
+        executorService.submit(() -> handleClient(session));
+    }
+
+    private void handleClient(WebSocketSession session) {
+        try {
+            // Handle client connection in a separate thread
+            log("Client connected: " + session.getId());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        // TODO Handle incoming messages from clients
+        // Handle incoming messages from clients
+        log("Received message: [" + session.getId() + "] " + message.getPayload());
     }
 
     @Override
@@ -34,7 +48,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         log("Client disconnected: " + session.getId());
     }
 
-    public void sendMessageToAll(String message) throws IOException {
+    public void sendMessageToAll(String message) {
         synchronized (sessions) {
             for (WebSocketSession session : sessions) {
                 try {
