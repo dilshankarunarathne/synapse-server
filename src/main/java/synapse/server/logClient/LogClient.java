@@ -34,6 +34,8 @@ public class LogClient {
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(logServerUrl);
 
+        System.out.println("Sending log message to log server: " + message);
+
         HttpEntity<String> response = restTemplate.exchange(
                 builder.toUriString(),
                 HttpMethod.POST,

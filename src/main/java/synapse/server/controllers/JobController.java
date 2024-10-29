@@ -30,7 +30,7 @@ public class JobController {
             @RequestBody String jobDetails
     ) {
         if (!authService.verifyToken(token)) {
-            log("Unauthorized request received for job creation with token: " + token);
+            log("Unauthorized request received for job creation");
             return ResponseEntity.status(401).body("Unauthorized");
         }
         jobService.createJob(jobDetails);
@@ -42,7 +42,7 @@ public class JobController {
     @GetMapping("/{jobId}")
     public ResponseEntity<String> monitorJob(@RequestHeader("Authorization") String token, @PathVariable String jobId) {
         if (!authService.verifyToken(token)) {
-            log("Unauthorized request received for query job with token: " + token);
+            log("Unauthorized request received for query job ");
             return ResponseEntity.status(401).body("Unauthorized");
         }
         jobService.monitorJob(jobId);

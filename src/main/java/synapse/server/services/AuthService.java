@@ -8,6 +8,7 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+import org.json.JSONObject;
 
 import static synapse.server.ServerApplication.log;
 
@@ -34,15 +35,23 @@ public class AuthService {
 
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(authServerUrl + "/verify-token");
 
-        HttpEntity<String> response = restTemplate.exchange(
-                builder.toUriString(),
-                HttpMethod.POST,
-                entity,
-                String.class);
+        try {
+            HttpEntity<String> response = restTemplate.exchange(
+                    builder.toUriString(),
+                    HttpMethod.POST,
+                    entity,
+                    String.class);
 
-        log(response.getBody());
-        System.out.println(response);
+            JSONObject jsonResponse = new JSONObject(response.getBody());
+            String clientId = jsonResponse.getString("client_id");
+            log("Client ID: " + clientId);
 
-        return false;
+            System.out.println(response);
+
+            return true;
+        } catch (Exception e) {
+            log("Error verifying token: " + e.getMessage());
+            return false;
+        }
     }
 }
