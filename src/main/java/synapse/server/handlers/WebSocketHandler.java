@@ -6,9 +6,12 @@ import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
+
+import static synapse.server.ServerApplication.log;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
@@ -28,16 +31,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         sessions.remove(session);
-
+        log("Client disconnected: " + session.getId());
     }
 
-    public void sendMessageToAll(String message) {
+    public void sendMessageToAll(String message) throws IOException {
         synchronized (sessions) {
             for (WebSocketSession session : sessions) {
                 try {
                     session.sendMessage(new TextMessage(message));
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    log(e.getMessage());
                 }
             }
         }

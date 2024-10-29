@@ -7,6 +7,8 @@ import synapse.server.handlers.WebSocketHandler;
 import synapse.server.services.AuthService;
 import synapse.server.services.JobService;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/jobs")
 public class JobController {
@@ -21,7 +23,7 @@ public class JobController {
     private WebSocketHandler webSocketHandler;
 
     @PostMapping
-    public ResponseEntity<String> createJob(@RequestHeader("Authorization") String token, @RequestBody String jobDetails) {
+    public ResponseEntity<String> createJob(@RequestHeader("Authorization") String token, @RequestBody String jobDetails) throws IOException {
         if (!authService.verifyToken(token)) {
             return ResponseEntity.status(401).body("Unauthorized");
         }
