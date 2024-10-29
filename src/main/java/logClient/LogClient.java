@@ -10,6 +10,7 @@ import java.net.URL;
 import org.springframework.beans.factory.annotation.Value;
 
 public class LogClient {
+    HttpURLConnection conn = null;
 
     @Value("${log.server.url}")
     private String logServerUrl;
@@ -18,9 +19,8 @@ public class LogClient {
         URL url = new URL(new LogClient().logServerUrl);
 
         System.out.println("Using log server URL: " + url);
-        
+
         // Create a connection
-        HttpURLConnection conn = null;
         try {
             conn = (HttpURLConnection) url.openConnection();
         } catch (IOException e) {
@@ -34,25 +34,22 @@ public class LogClient {
         conn.setDoOutput(true);
     }
 
-    public static void main(String[] args) {
-        try {
-            // JSON payload
-            String jsonInputString = "{\"message\": \"test log 1\"}";
+    public void log(String message) throws IOException {
+        // JSON payload
+        String jsonInputString = "{\"message\": \"" + message + "\"}";
 
-            // Write the JSON payload to the output stream
-            try (OutputStream os = conn.getOutputStream()) {
-                byte[] input = jsonInputString.getBytes("utf-8");
-                os.write(input, 0, input.length);
-            }
-
-            // Get the response code
-            int responseCode = conn.getResponseCode();
-            System.out.println("POST Response Code :: " + responseCode);
-
-            // Close the connection
-            conn.disconnect();
-        } catch (Exception e) {
-            e.printStackTrace();
+        // Write the JSON payload to the output stream
+        try (OutputStream os = conn.getOutputStream()) {
+            byte[] input = jsonInputString.getBytes("utf-8");
+            os.write(input, 0, input.length);
         }
+
+        // Get the response code
+        int responseCode = conn.getResponseCode();
+        System.out.println("POST Response Code :: " + responseCode);
+    }
+
+    public void close() {
+        conn.disconnect();
     }
 }
