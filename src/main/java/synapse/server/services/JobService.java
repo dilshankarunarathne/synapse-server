@@ -60,7 +60,7 @@ public class JobService {
     }
 
     public String monitorJob(String jobId) {
-        return "Job status: " + jobId;
+        return "Job status: " + jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found")).getStatus();
     }
 
     // Additional methods for job lifecycle management
