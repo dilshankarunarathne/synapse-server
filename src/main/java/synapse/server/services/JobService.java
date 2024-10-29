@@ -1,6 +1,7 @@
 package synapse.server.services;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import synapse.server.handlers.WebSocketHandler;
@@ -24,6 +25,7 @@ public class JobService {
     private JobRepository jobRepository;
 
     @Autowired
+    @Lazy
     private WebSocketHandler webSocketHandler;
 
     public String submitJob(
@@ -77,6 +79,14 @@ public class JobService {
         Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
         job.setStatus(status);
         log("Job [" + jobId + "] status updated: " + status);
+        jobRepository.save(job);
+    }
+
+    public void updateJobResult(String jobId, String result) {
+        Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+        job.setResult(result);
+        job.setStatus(JobStatus.FINISHED);
+        log("Job [" + jobId + "] result updated: " + result);
         jobRepository.save(job);
     }
 

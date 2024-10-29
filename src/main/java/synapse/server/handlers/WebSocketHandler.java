@@ -1,13 +1,14 @@
 package synapse.server.handlers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import synapse.server.models.JobStatus;
 import synapse.server.services.JobService;
+import synapse.server.models.JobStatus;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -25,6 +26,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
     @Autowired
+    @Lazy
     private JobService jobService;
 
     @Override
@@ -36,6 +38,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         log("Received message: [" + session.getId() + "] " + message.getPayload());
+        // Handle job result message
+        if (message.getPayload().startsWith("Job result: ")) {
+            String[] parts = message.getPayload().split(": ");
+            String jobId = parts[1];
+            String result = parts[2];
+            jobService.updateJobResult(jobId, result);
+        }
     }
 
     @Override
