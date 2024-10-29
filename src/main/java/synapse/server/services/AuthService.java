@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 import org.json.JSONObject;
+import synapse.server.models.Job;
+import synapse.server.models.JobStatus;
 
 import static synapse.server.ServerApplication.log;
 

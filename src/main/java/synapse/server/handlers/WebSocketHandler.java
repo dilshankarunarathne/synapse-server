@@ -43,7 +43,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
             String[] parts = message.getPayload().split(": ");
             String jobId = parts[1];
             String result = parts[2];
-            jobService.updateJobResult(jobId, result);
+            String payloadHash = parts[3];
+            String dataHash = parts[4];
+            jobService.updateJobResult(jobId, result, payloadHash, dataHash);
         }
     }
 

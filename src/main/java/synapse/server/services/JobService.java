@@ -14,6 +14,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.UUID;
 
 import static synapse.server.ServerApplication.log;
@@ -33,7 +35,7 @@ public class JobService {
             MultipartFile payload,
             MultipartFile data,
             JobType jobType
-    ) throws IOException {
+    ) throws IOException, NoSuchAlgorithmException {
         // Generate a unique job ID
         String jobId = UUID.randomUUID().toString();
 
@@ -45,6 +47,10 @@ public class JobService {
         Files.write(payloadPath, payload.getBytes());
         Files.write(dataPath, data.getBytes());
 
+        // Calculate hashes
+        String payloadHash = calculateHash(payload.getBytes());
+        String dataHash = calculateHash(data.getBytes());
+
         // Create a new Job object and save it to MongoDB
         Job job = new Job();
         job.setJobId(jobId);
@@ -54,6 +60,8 @@ public class JobService {
         job.setPayloadPath(payloadPath.toString());
         job.setDataPath(dataPath.toString());
         job.setJobType(jobType); // Set job type
+        job.setPayloadHash(payloadHash);
+        job.setDataHash(dataHash);
 
         // Add details to the DB
         log("Job Saving (DB): " + jobId + ", " + clientId + ", " + JobStatus.INITIATED + ", Pending, " + jobType);
@@ -75,23 +83,38 @@ public class JobService {
         return jobId;
     }
 
-    public void updateJobStatus(String jobId, JobStatus status) {
+    public void updateJobResult(String jobId, String result, String payloadHash, String dataHash) {
         Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
-        job.setStatus(status);
-        log("Job [" + jobId + "] status updated: " + status);
-        jobRepository.save(job);
-    }
-
-    public void updateJobResult(String jobId, String result) {
-        Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+        if (!job.getPayloadHash().equals(payloadHash) || !job.getDataHash().equals(dataHash)) {
+            throw new RuntimeException("Hash verification failed");
+        }
         job.setResult(result);
         job.setStatus(JobStatus.FINISHED);
         log("Job [" + jobId + "] result updated: " + result);
         jobRepository.save(job);
     }
 
+    private String calculateHash(byte[] data) throws NoSuchAlgorithmException {
+        MessageDigest digest = MessageDigest.getInstance("SHA-256");
+        byte[] hash = digest.digest(data);
+        StringBuilder hexString = new StringBuilder();
+        for (byte b : hash) {
+            String hex = Integer.toHexString(0xff & b);
+            if (hex.length() == 1) hexString.append('0');
+            hexString.append(hex);
+        }
+        return hexString.toString();
+    }
+
     public String monitorJob(String jobId) {
         return "Job status: " + jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found")).getStatus();
+    }
+
+    public void updateJobStatus(String jobId, JobStatus status) {
+        Job job = jobRepository.findById(jobId).orElseThrow(() -> new RuntimeException("Job not found"));
+        job.setStatus(status);
+        log("Job [" + jobId + "] status updated: " + status);
+        jobRepository.save(job);
     }
 
     // Additional methods for job lifecycle management

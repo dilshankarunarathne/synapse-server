@@ -14,8 +14,25 @@ public class Job {
     private String payloadPath;
     private String dataPath;
     private JobType jobType;
+    private String payloadHash;
+    private String dataHash;
 
-    // Getters and setters
+    public String getPayloadHash() {
+        return payloadHash;
+    }
+
+    public void setPayloadHash(String payloadHash) {
+        this.payloadHash = payloadHash;
+    }
+
+    public String getDataHash() {
+        return dataHash;
+    }
+
+    public void setDataHash(String dataHash) {
+        this.dataHash = dataHash;
+    }
+
     public String getJobId() {
         return jobId;
     }

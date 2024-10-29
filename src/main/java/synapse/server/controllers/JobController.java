@@ -11,6 +11,7 @@ import synapse.server.services.AuthService;
 import synapse.server.services.JobService;
 
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 import static synapse.server.ServerApplication.log;
 
@@ -34,7 +35,7 @@ public class JobController {
             @RequestParam("payload") MultipartFile payload,
             @RequestParam("data") MultipartFile data,
             @RequestParam("jobType") JobType jobType
-    ) throws IOException {
+    ) throws IOException, NoSuchAlgorithmException {
         if (!authService.verifyToken(token)) {
             log("Unauthorized request received for job creation");
             return ResponseEntity.status(401).body("Unauthorized");
