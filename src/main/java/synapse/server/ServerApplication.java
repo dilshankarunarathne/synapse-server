@@ -28,7 +28,6 @@ public class ServerApplication {
                 }
             } catch (InterruptedException e) {
                 log("Error shutting down executor service: " + e.getMessage());
-                e.printStackTrace();
             }
         }));
 
