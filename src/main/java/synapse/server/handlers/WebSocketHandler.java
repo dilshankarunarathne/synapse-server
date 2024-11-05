@@ -1,6 +1,5 @@
 package synapse.server.handlers;
 
-import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -8,7 +7,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
-import synapse.server.handlers.requests.CreateJobRequest;
+import synapse.server.models.requests.CreateJobRequest;
 import synapse.server.services.JobService;
 import synapse.server.models.JobStatus;
 

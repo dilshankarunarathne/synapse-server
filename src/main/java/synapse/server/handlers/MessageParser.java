@@ -1,7 +1,7 @@
 package synapse.server.handlers;
 
 import org.json.JSONObject;
-import synapse.server.handlers.requests.CreateJobRequest;
+import synapse.server.models.requests.CreateJobRequest;
 
 import java.util.Base64;
 

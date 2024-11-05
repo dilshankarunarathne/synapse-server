@@ -1,4 +1,4 @@
-package synapse.server.handlers.requests;
+package synapse.server.models.requests;
 
 public class CreateJobRequest {
     String type;
