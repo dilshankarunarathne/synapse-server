@@ -76,7 +76,7 @@ public class JobService {
                 webSocketHandler.distributeJob(jobId);
                 break;
             case COLLABORATIVE:
-                webSocketHandler.assignCollaborativeJob(jobId);
+//                webSocketHandler.assignCollaborativeJob(jobId);
                 break;
         }
 
@@ -116,6 +116,4 @@ public class JobService {
         log("Job [" + jobId + "] status updated: " + status);
         jobRepository.save(job);
     }
-
-    // Additional methods for job lifecycle management
 }

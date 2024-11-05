@@ -4,6 +4,8 @@ import org.json.JSONObject;
 import synapse.server.models.requests.CreateJobRequest;
 
 import java.util.Base64;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class MessageParser {
     public static CreateJobRequest parseResponse(String jsonString) {
@@ -28,5 +30,14 @@ public class MessageParser {
 //        System.out.println("Data: " + data);
 
         return new CreateJobRequest(type, payload, data);
+    }
+
+    public static int extractNClients(String payload) {
+        Pattern pattern = Pattern.compile("\\.n_clients=(\\d+)");
+        Matcher matcher = pattern.matcher(payload);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        throw new IllegalArgumentException("n_clients not found in payload");
     }
 }

@@ -19,7 +19,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static synapse.server.ServerApplication.log;
-import static synapse.server.handlers.MessageParser.parseResponse;
+import static synapse.server.handlers.MessageParser.*;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
@@ -45,7 +45,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
         // store the message in a file
         CreateJobRequest jobRequest = parseResponse(message.getPayload());
 
-        
+        int nClients = extractNClients(jobRequest.getPayload());
+
+        if (nClients == 1) {
+            // TODO assign the job to a single worker
+        } else {
+            assignCollaborativeJob(jobRequest.getPayload(), jobRequest.getData(), nClients);
+        }
     }
 
     @Override
@@ -100,20 +106,34 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    public void assignCollaborativeJob(String jobId) {
+    public void assignCollaborativeJob(String code, String data, int numClients) {
         synchronized (sessions) {
+            String[] lines = data.split("\n");
+            int linesPerClient = (int) Math.ceil((double) lines.length / numClients);
             int segment = 1;
+
             for (WebSocketSession session : sessions) {
+                int start = (segment - 1) * linesPerClient;
+                int end = Math.min(start + linesPerClient, lines.length);
+                StringBuilder clientData = new StringBuilder();
+
+                for (int i = start; i < end; i++) {
+                    clientData.append(lines[i]).append("\n");
+                }
+
+                String finalClientData = clientData.toString();
                 int finalSegment = segment;
+
                 executorService.submit(() -> {
                     try {
-                        session.sendMessage(new TextMessage("New job segment " + finalSegment + " assigned: " + jobId));
-                        log("Job [" + jobId + ":" + finalSegment + "] assigned: " + jobId + " to " + session.getId());
-                        jobService.updateJobStatus(jobId, JobStatus.ASSIGNED);
+                        session.sendMessage(new TextMessage("New job segment " + finalSegment + " assigned: " + code + "\n" + finalClientData));
+                        log("Job segment [" + finalSegment + "] assigned to client: " + session.getId());
+                        jobService.updateJobStatus(code, JobStatus.ASSIGNED);
                     } catch (IOException e) {
-                        log("Error sending job to client: " + e.getMessage());
+                        log("Error sending job segment to client: " + e.getMessage());
                     }
                 });
+
                 segment++;
             }
         }
