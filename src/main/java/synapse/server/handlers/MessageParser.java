@@ -8,6 +8,17 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class MessageParser {
+    public static int[] parseResult(String response) {
+        Pattern pattern = Pattern.compile("RESULT:(\\d+):(\\d+)");
+        Matcher matcher = pattern.matcher(response);
+        if (matcher.find()) {
+            int jobId = Integer.parseInt(matcher.group(1));
+            int result = Integer.parseInt(matcher.group(2));
+            return new int[]{jobId, result};
+        }
+        throw new IllegalArgumentException("Invalid response format");
+    }
+
     public static CreateJobRequest parseResponse(String jsonString) {
         // Parse the JSON string
         JSONObject jsonObject = new JSONObject(jsonString);

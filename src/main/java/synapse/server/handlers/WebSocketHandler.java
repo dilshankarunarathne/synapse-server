@@ -7,6 +7,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+
 import synapse.server.models.requests.CreateJobRequest;
 import synapse.server.services.JobService;
 import synapse.server.models.JobStatus;
@@ -42,15 +43,24 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         log("Received message: [" + session.getId() + "] " + message.getPayload());
 
-        // store the message in a file
-        CreateJobRequest jobRequest = parseResponse(message.getPayload());
-
-        int nClients = extractNClients(jobRequest.getPayload());
-
-        if (nClients == 1) {
-            // TODO assign the job to a single worker
+        if (message.getPayload().contains("RESULT")) {
+            int[] result = parseResult(message.getPayload());
+            log("Job [" + result[0] + "] completed with result: " + result[1]);
+            // TODO: accumulate and send back to creator
+            return;
         } else {
-            assignCollaborativeJob(jobRequest.getPayload(), jobRequest.getData(), nClients);
+            // store the message in a file
+            CreateJobRequest jobRequest = parseResponse(message.getPayload());
+            // Assign the ID of the job request received client
+            jobRequest.setClientID(session.getId());
+
+            int nClients = extractNClients(jobRequest.getPayload());
+
+            if (nClients == 1) {
+                // TODO assign the job to a single worker
+            } else {
+                assignCollaborativeJob(jobRequest, 2); // TODO hard coded for now
+            }
         }
     }
 
@@ -106,13 +116,29 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    public void assignCollaborativeJob(String code, String data, int numClients) {
+    public void assignCollaborativeJob(CreateJobRequest jobRequest, int numClients) {
         synchronized (sessions) {
-            String[] lines = data.split("\n");
+            String[] lines = jobRequest.getData().split("\n");
             int linesPerClient = (int) Math.ceil((double) lines.length / numClients);
             int segment = 1;
+            boolean jobLeaderAssigned = false;
+            String jobLeaderID = null;
 
             for (WebSocketSession session : sessions) {
+                if (session.getId().equals(jobRequest.getClientID())) {
+                    continue; // Skip the client who submitted the job
+                }
+
+                if (!jobLeaderAssigned) {
+                    jobLeaderID = session.getId();
+                    jobRequest.setJobLeaderID(jobLeaderID);
+                    jobLeaderAssigned = true;
+
+                    // TODO send the leader the job info for accumulation
+                    assignJobLeader(jobRequest);
+                    continue; // Skip the job leader
+                }
+
                 int start = (segment - 1) * linesPerClient;
                 int end = Math.min(start + linesPerClient, lines.length);
                 StringBuilder clientData = new StringBuilder();
@@ -126,15 +152,52 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 executorService.submit(() -> {
                     try {
-                        session.sendMessage(new TextMessage("New job segment " + finalSegment + " assigned: " + code + "\n" + finalClientData));
+                        session.sendMessage(
+                                new TextMessage(
+                                        "JOB:" + finalSegment + "|SEP|"
+                                                + "CREATOR:" + jobRequest.getClientID() + "|SEP|"
+                                                + "LEADER:" + jobRequest.getJobLeaderID() + "|SEP|"
+                                                + "DATA:" + finalClientData + "|SEP|"
+                                                + "PAYLOAD:" + jobRequest.getPayload() + "|SEP|"
+                                                + "END"
+                                ));
+                        System.out.println("-----------" + finalSegment + "-----------");
+                        System.out.println("JOB:" + finalSegment + "|SEP|"
+                                + "CREATOR:" + jobRequest.getClientID() + "|SEP|"
+                                + "LEADER:" + jobRequest.getJobLeaderID() + "|SEP|"
+                                + "DATA:" + finalClientData + "|SEP|"
+                                + "PAYLOAD:" + jobRequest.getPayload() + "|SEP|"
+                                + "END");
+                        System.out.println("-----------" + finalSegment + "-----------");
                         log("Job segment [" + finalSegment + "] assigned to client: " + session.getId());
-                        jobService.updateJobStatus(code, JobStatus.ASSIGNED);
+//                        jobService.updateJobStatus(jobRequest.getType(), JobStatus.ASSIGNED);
                     } catch (IOException e) {
                         log("Error sending job segment to client: " + e.getMessage());
                     }
                 });
 
                 segment++;
+            }
+        }
+    }
+
+    private void assignJobLeader(CreateJobRequest jobRequest) {
+        synchronized (sessions) {
+            for (WebSocketSession session : sessions) {
+                if (session.getId().equals(jobRequest.getJobLeaderID())) {
+                    executorService.submit(() -> {
+                        try {
+                            session.sendMessage(
+                                    new TextMessage(
+                                            "LEAD\n" + jobRequest.getPayload()
+                            ));
+
+                            log("Job leader assigned: " + session.getId());
+                        } catch (IOException e) {
+                            log("Error sending job leader assignment to client: " + e.getMessage());
+                        }
+                    });
+                }
             }
         }
     }
