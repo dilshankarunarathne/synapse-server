@@ -1,5 +1,6 @@
 package synapse.server.handlers;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
@@ -7,6 +8,7 @@ import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import synapse.server.handlers.requests.CreateJobRequest;
 import synapse.server.services.JobService;
 import synapse.server.models.JobStatus;
 
@@ -18,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static synapse.server.ServerApplication.log;
+import static synapse.server.handlers.MessageParser.parseResponse;
 
 @Component
 public class WebSocketHandler extends TextWebSocketHandler {
@@ -33,20 +36,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         sessions.add(session);
         log("Client connected: " + session.getId());
+        // TODO: update the clients list
     }
 
     @Override
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         log("Received message: [" + session.getId() + "] " + message.getPayload());
-        // Handle job result message
-        if (message.getPayload().startsWith("Job result: ")) {
-            String[] parts = message.getPayload().split(": ");
-            String jobId = parts[1];
-            String result = parts[2];
-            String payloadHash = parts[3];
-            String dataHash = parts[4];
-            jobService.updateJobResult(jobId, result, payloadHash, dataHash);
-        }
+
+        // store the message in a file
+        CreateJobRequest jobRequest = parseResponse(message.getPayload());
+
+        
     }
 
     @Override

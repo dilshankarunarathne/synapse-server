@@ -18,12 +18,16 @@ public class LogClient {
     @Value("${log.server.url}")
     private String logServerUrl;
 
+    private static final int MAX_LOG_LENGTH = 100;
+
     @PostConstruct
     public void init() {
         System.out.println("Initializing log client... " + logServerUrl);
     }
 
     public void log(String message) throws IOException {
+        message = truncateMessage(message);
+
         RestTemplate restTemplate = new RestTemplate();
 
         HttpHeaders headers = new HttpHeaders();
@@ -35,13 +39,23 @@ public class LogClient {
         UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(logServerUrl);
 
         System.out.println("Sending log message to log server: " + message);
-
-        HttpEntity<String> response = restTemplate.exchange(
-                builder.toUriString(),
-                HttpMethod.POST,
-                entity,
-                String.class);
-
+        HttpEntity<String> response = null;
+        try {
+            response = restTemplate.exchange(
+                    builder.toUriString(),
+                    HttpMethod.POST,
+                    entity,
+                    String.class);
+        } catch (Exception e) {
+            System.out.println("Error sending log message: " + e.getMessage());
+        }
         System.out.println(response);
+    }
+
+    private String truncateMessage(String message) {
+        if (message.length() > MAX_LOG_LENGTH) {
+            return message.substring(0, MAX_LOG_LENGTH) + "...";
+        }
+        return message;
     }
 }
