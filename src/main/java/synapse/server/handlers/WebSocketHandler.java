@@ -28,6 +28,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private final Set<WebSocketSession> sessions = Collections.synchronizedSet(new HashSet<>());
     private final ExecutorService executorService = Executors.newCachedThreadPool();
 
+    private int[] resultSegments = new int[2]; // TODO hardcoded for now
+    private int segmentsRecieved = 0;
+    private String jobLeader = null;
+    String payload = null;
+
     @Autowired
     @Lazy
     private JobService jobService;
@@ -46,7 +51,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
         if (message.getPayload().contains("RESULT")) {
             int[] result = parseResult(message.getPayload());
             log("Job [" + result[0] + "] completed with result: " + result[1]);
-            // TODO: accumulate and send back to creator
+
+            resultSegments[segmentsRecieved] = result[0];
+            segmentsRecieved++;
+
+            if (segmentsRecieved == 2) {
+                System.out.println("----------- All segments received -------------");
+                // TODO: accumulate and send back to creator
+                String request = buildLeaderRequest();
+                sendToLeader(jobLeader, request);
+            }
+
             return;
         } else {
             // store the message in a file
@@ -62,6 +77,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 assignCollaborativeJob(jobRequest, 2); // TODO hard coded for now
             }
         }
+    }
+
+    private String getFinalClientData() {
+        String message =  Integer.toString(resultSegments[0]);
+        message = message + "\n" + resultSegments[1];
+        return message;
+    }
+
+    private String buildLeaderRequest() {
+        return "LEAD|SEP|"
+                + "DATA:" + getFinalClientData() + "|SEP|"
+                + "PAYLOAD:" + payload + "|SEP|"
+                + "END";
     }
 
     @Override
@@ -135,7 +163,9 @@ public class WebSocketHandler extends TextWebSocketHandler {
                     jobLeaderAssigned = true;
 
                     // TODO send the leader the job info for accumulation
-                    assignJobLeader(jobRequest);
+//                    assignJobLeader(jobRequest);
+                    jobLeader = jobLeaderID;
+
                     continue; // Skip the job leader
                 }
 
@@ -149,6 +179,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
                 String finalClientData = clientData.toString();
                 int finalSegment = segment;
+
+                payload = jobRequest.getPayload();
 
                 executorService.submit(() -> {
                     try {
@@ -181,17 +213,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    private void assignJobLeader(CreateJobRequest jobRequest) {
+    private void sendToLeader(String leaderID, String message) {
+        System.out.println("--------- sending to leader ---------" + leaderID);
         synchronized (sessions) {
             for (WebSocketSession session : sessions) {
-                if (session.getId().equals(jobRequest.getJobLeaderID())) {
+                System.out.print(session.getId() + " ");
+                System.out.println("expected leader id: " + leaderID);
+                if (session.getId().equals(leaderID)) {
+                    System.out.println("leader thread found...");
                     executorService.submit(() -> {
                         try {
                             session.sendMessage(
-                                    new TextMessage(
-                                            "LEAD\n" + jobRequest.getPayload()
-                            ));
-
+                                    new TextMessage(message));
+                            System.out.println("----------------------");
+                            System.out.println(message);
+                            System.out.println("----------------------");
                             log("Job leader assigned: " + session.getId());
                         } catch (IOException e) {
                             log("Error sending job leader assignment to client: " + e.getMessage());
@@ -201,4 +237,25 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
         }
     }
+
+//    private void assignJobLeader(CreateJobRequest jobRequest) {
+//        synchronized (sessions) {
+//            for (WebSocketSession session : sessions) {
+//                if (session.getId().equals(jobRequest.getJobLeaderID())) {
+//                    executorService.submit(() -> {
+//                        try {
+//                            session.sendMessage(
+//                                    new TextMessage(
+//                                            "LEAD\n" + jobRequest.getPayload()
+//                            ));
+//
+//                            log("Job leader assigned: " + session.getId());
+//                        } catch (IOException e) {
+//                            log("Error sending job leader assignment to client: " + e.getMessage());
+//                        }
+//                    });
+//                }
+//            }
+//        }
+//    }
 }
