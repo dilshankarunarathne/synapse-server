@@ -32,6 +32,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private int segmentsRecieved = 0;
     private String jobLeader = null;
     String payload = null;
+    String jobCreator = null;
 
     @Autowired
     @Lazy
@@ -67,11 +68,21 @@ public class WebSocketHandler extends TextWebSocketHandler {
             System.out.println("----------------------------------");
             System.out.println("Final result: " + message.getPayload());
             System.out.println("----------------------------------");
+
+            // TODO need to send the final result to the creator
+            String result = message.getPayload();
+            sendFinalResultToCreator(jobCreator, result);
+
         } else {
             // store the message in a file
             CreateJobRequest jobRequest = parseResponse(message.getPayload());
             // Assign the ID of the job request received client
             jobRequest.setClientID(session.getId());
+
+            // reset the job variables
+            segmentsRecieved = 0;
+
+            jobCreator = session.getId();
 
             int nClients = extractNClients(jobRequest.getPayload());
 
@@ -79,6 +90,30 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 // TODO assign the job to a single worker
             } else {
                 assignCollaborativeJob(jobRequest, 2); // TODO hard coded for now
+            }
+        }
+    }
+
+    private void sendFinalResultToCreator(String jobCreator, String result) {
+        String message = "OUTPUT:" + result;
+        synchronized (sessions) {
+            for (WebSocketSession session : sessions) {
+                System.out.print(session.getId() + " ");
+                System.out.println("expected creator id: " + jobCreator);
+                if (session.getId().equals(jobCreator)) {
+                    System.out.println("creator thread found...");
+                    executorService.submit(() -> {
+                        try {
+                            session.sendMessage(
+                                    new TextMessage(message));
+                            System.out.println("----------------------");
+                            System.out.println(message);
+                            System.out.println("----------------------");
+                        } catch (IOException e) {
+                            log("Error sending job creator the final output: " + e.getMessage());
+                        }
+                    });
+                }
             }
         }
     }
