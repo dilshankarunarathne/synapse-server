@@ -52,7 +52,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             int[] result = parseResult(message.getPayload());
             log("Job [" + result[0] + "] completed with result: " + result[1]);
 
-            resultSegments[segmentsRecieved] = result[0];
+            resultSegments[segmentsRecieved] = result[1];
             segmentsRecieved++;
 
             if (segmentsRecieved == 2) {
@@ -63,6 +63,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
 
             return;
+        } else if (message.getPayload().contains("FINAL")) {
+            System.out.println("----------------------------------");
+            System.out.println("Final result: " + message.getPayload());
+            System.out.println("----------------------------------");
         } else {
             // store the message in a file
             CreateJobRequest jobRequest = parseResponse(message.getPayload());
